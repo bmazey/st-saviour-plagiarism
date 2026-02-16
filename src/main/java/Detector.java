@@ -12,17 +12,37 @@ public class Detector {
 
         // Read the input files and iterate over the contents line-by-line.
         try {
-            // Start by reading the file we want to check for plagiarism.
-            File submitted = new File("./resources/cheat.txt");
-            Scanner scanner = new Scanner(submitted);
-            String content = scanner.useDelimiter("\\A").next();
-            
 
+            // Start by reading the file which contains the original work.
             File original = new File("./resources/poem.txt");
-            scanner = new Scanner(original);
-            while (scanner.hasNextLine()) {
-                // System.out.println(scanner.nextLine());
+            Scanner scanner = new Scanner(original);
 
+            // Get all contents of the file as a single String.
+            String content = scanner.useDelimiter("\\A").next();
+            scanner.close();
+
+            // Now read the file which we want to check for plagiarism.
+            File submitted = new File("./resources/cheat.txt");
+            scanner = new Scanner(submitted);
+
+            // Iterate over each line, and use the line as the pattern.
+            int line = 0;
+            while (scanner.hasNextLine()) {
+                String pattern = scanner.nextLine();
+
+                // Check if pattern is pure whitespace and if so, skip.
+                if (pattern.isEmpty()) {
+                    // Still increment line
+                    line++;
+                    continue;
+                }
+
+                boolean plagiarized = search(pattern, content, d, q);
+                if (plagiarized) {
+                    System.out.println("Plagiarism detected on line " + line + ": " + pattern);
+                }
+
+                line++;
             }
    
             scanner.close();
@@ -32,7 +52,7 @@ public class Detector {
         } 
     }
 
-    public static void search(String pattern, String text, int d, int q) {
+    public static boolean search(String pattern, String text, int d, int q) {
         int M = pattern.length();
         int N = text.length();
         int p = 0; // hash value for pattern
@@ -40,8 +60,9 @@ public class Detector {
         int h = 1;
 
         // The value of h would be: pow(d, M-1) % q
-        for (int i = 0; i < M - 1; i++)
+        for (int i = 0; i < M - 1; i++) {
             h = (h * d) % q;
+        }
 
         // Calculate the hash value of pattern and first window of text.
         for (int i = 0; i < M; i++) {
@@ -64,9 +85,9 @@ public class Detector {
                     j++;  
                 }
 
-                // if p == t and pat[0...M-1] = txt[i, i+1, ...i+M-1]
+                // Plagiarism detected!
                 if (j == M) {
-                    System.out.println("Pattern found at index: " + i);
+                    return true;
                 }
             }
 
@@ -76,9 +97,13 @@ public class Detector {
                 t = (d * (t - text.charAt(i) * h) + text.charAt(i + M)) % q;
 
                 // We might get negative value of t, converting it to positive.
-                if (t < 0)
+                if (t < 0) {
                     t = (t + q);
+                }
             }
         }
+
+        // No plagiarism detected.
+        return false;
     }
 }
